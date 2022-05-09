@@ -13,7 +13,7 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
-class AESW {
+class AES {
  // Class private variables
  private static final String SECRET_KEY
      = "my_super_secret_key_ho_ho_ho";
