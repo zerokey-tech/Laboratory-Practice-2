@@ -1,109 +1,203 @@
-#A * ALGORITHM CODE:
-class Node:
-    def __init__(self, data, level, fval):
-    # Initialize the node with the data, level of the node and the calculated fvalue
-        self.data = data
-        self.level = level
-        self.fval = fval
-    def generate_child(self):
-    # Generate child nodes from the given node by moving the blank space
-    # either in the four directions {up,down,left,right}
-        x, y = self.find(self.data, '_')
-    # val_list contains position values for moving the blank space in either of
-    # the 4 directions [up,down,left,right] respectively.
-        val_list = [[x, y - 1], [x, y + 1], [x - 1, y], [x + 1, y]]
-        children = []
-        for i in val_list:
-            child = self.shuffle(self.data, x, y, i[0], i[1])
-            if child is not None:
-                child_node = Node(child, self.level + 1, 0)
-                children.append(child_node)
-        return children
-    def shuffle(self, puz, x1, y1, x2, y2):
-    # Move the blank space in the given direction and if the position value are out
-    # of limits the return None
-        if x2 >= 0 and x2 < len(self.data) and y2 >= 0 and y2 < len(self.data):
-            temp_puz = []
-            temp_puz = self.copy(puz)
-            temp = temp_puz[x2][y2]
-            temp_puz[x2][y2] = temp_puz[x1][y1]
-            temp_puz[x1][y1] = temp
-            return temp_puz
+import copy
+ 
+# Importing the heap functions from python
+# library for Priority Queue
+from heapq import heappush, heappop
+ 
+# This variable can be changed to change
+# the program from 8 puzzle(n=3) to 15
+# puzzle(n=4) to 24 puzzle(n=5)...
+n = 3
+ 
+# bottom, left, top, right
+row = [ 1, 0, -1, 0 ]
+col = [ 0, -1, 0, 1 ]
+ 
+# A class for Priority Queue
+class priorityQueue:
+     
+    # Constructor to initialize a
+    # Priority Queue
+    def __init__(self):
+        self.heap = []
+ 
+    # Inserts a new key 'k'
+    def push(self, k):
+        heappush(self.heap, k)
+ 
+    # Method to remove minimum element
+    # from Priority Queue
+    def pop(self):
+        return heappop(self.heap)
+ 
+    # Method to know if the Queue is empty
+    def empty(self):
+        if not self.heap:
+            return True
         else:
-            return None
-    def copy(self, root):
-        # Copy function to create a similar matrix of the given node
-        temp = []
-        for i in root:
-            t = []
-            for j in i:
-                t.append(j)
-            temp.append(t)
-        return temp
-
-    def find(self, puz, x):
-    # Specifically used to find the position of the blank space
-        for i in range(0, len(self.data)):
-            for j in range(0, len(self.data)):
-                if puz[i][j] == x:
-                    return i, j
-class Puzzle:
-    def __init__(self, size):
-    # Initialize the puzzle size by the specified size,open and closed lists to empty
-        self.n = size
-        self.open = []
-        self.closed = []
-
-    def accept(self):
-    # Accepts the puzzle from the user
-        puz = []
-        for i in range(0, self.n):
-            temp = input().split(" ")
-            puz.append(temp)
-        return puz
-    
-    def f(self, start, goal):
-    # Heuristic Function to calculate hueristic value f(x) = h(x) + g(x)
-        return self.h(start.data, goal) + start.level
-
-    def h(self, start, goal):
-    # Calculates the different between the given puzzles
-        temp = 0
-        for i in range(0, self.n):
-            for j in range(0, self.n):
-                if start[i][j] != goal[i][j] and start[i][j] != '_':
-                    temp += 1
-        return temp
-    
-    def process(self):
-    # Accept Start and Goal Puzzle state
-        print("Enter the start state matrix \n")
-        start = self.accept()
-        print("Enter the goal state matrix \n")
-        goal = self.accept()
-        start = Node(start, 0, 0)
-        start.fval = self.f(start, goal)
-        # Put the start node in the open list
-        self.open.append(start)
-        print("\n\n")
-        while True:
-            cur = self.open[0]
-            print("")
-            print("  | ")
-            print(" \\\'/\n")
-            for i in cur.data:
-                for j in i:
-                    print(j, end=" ")
-                print("")
-        # If the difference between current and goal node is 0 we have reached the goal node
-            if (self.h(cur.data, goal) == 0):
-                break
-            for i in cur.generate_child():
-                i.fval = self.f(i, goal)
-                self.open.append(i)
-            self.closed.append(cur)
-            del self.open[0]
-        # sort the opne list based on f value
-        self.open.sort(key=lambda x: x.fval, reverse=False)
-puz = Puzzle(3)
-puz.process()
+            return False
+ 
+# Node structure
+class node:
+     
+    def __init__(self, parent, mat, empty_tile_pos,
+                 cost, level):
+                      
+        # Stores the parent node of the
+        # current node helps in tracing
+        # path when the answer is found
+        self.parent = parent
+ 
+        # Stores the matrix
+        self.mat = mat
+ 
+        # Stores the position at which the
+        # empty space tile exists in the matrix
+        self.empty_tile_pos = empty_tile_pos
+ 
+        # Storesthe number of misplaced tiles
+        self.cost = cost
+ 
+        # Stores the number of moves so far
+        self.level = level
+ 
+    # This method is defined so that the
+    # priority queue is formed based on
+    # the cost variable of the objects
+    def __lt__(self, nxt):
+        return self.cost < nxt.cost
+ 
+# Function to calculate the number of
+# misplaced tiles ie. number of non-blank
+# tiles not in their goal position
+def calculateCost(mat, final) -> int:
+     
+    count = 0
+    for i in range(n):
+        for j in range(n):
+            if ((mat[i][j]) and
+                (mat[i][j] != final[i][j])):
+                count += 1
+                 
+    return count
+ 
+def newNode(mat, empty_tile_pos, new_empty_tile_pos,
+            level, parent, final) -> node:
+                 
+    # Copy data from parent matrix to current matrix
+    new_mat = copy.deepcopy(mat)
+ 
+    # Move tile by 1 position
+    x1 = empty_tile_pos[0]
+    y1 = empty_tile_pos[1]
+    x2 = new_empty_tile_pos[0]
+    y2 = new_empty_tile_pos[1]
+    new_mat[x1][y1], new_mat[x2][y2] = new_mat[x2][y2], new_mat[x1][y1]
+ 
+    # Set number of misplaced tiles
+    cost = calculateCost(new_mat, final)
+ 
+    new_node = node(parent, new_mat, new_empty_tile_pos,
+                    cost, level)
+    return new_node
+ 
+# Function to print the N x N matrix
+def printMatrix(mat):
+     
+    for i in range(n):
+        for j in range(n):
+            print("%d " % (mat[i][j]), end = " ")
+             
+        print()
+ 
+# Function to check if (x, y) is a valid
+# matrix coordinate
+def isSafe(x, y):
+     
+    return x >= 0 and x < n and y >= 0 and y < n
+ 
+# Print path from root node to destination node
+def printPath(root):
+     
+    if root == None:
+        return
+     
+    printPath(root.parent)
+    printMatrix(root.mat)
+    print()
+ 
+# Function to solve N*N - 1 puzzle algorithm
+# using Branch and Bound. empty_tile_pos is
+# the blank tile position in the initial state.
+def solve(initial, empty_tile_pos, final):
+     
+    # Create a priority queue to store live
+    # nodes of search tree
+    pq = priorityQueue()
+ 
+    # Create the root node
+    cost = calculateCost(initial, final)
+    root = node(None, initial,
+                empty_tile_pos, cost, 0)
+ 
+    # Add root to list of live nodes
+    pq.push(root)
+ 
+    # Finds a live node with least cost,
+    # add its children to list of live
+    # nodes and finally deletes it from
+    # the list.
+    while not pq.empty():
+ 
+        # Find a live node with least estimated
+        # cost and delete it form the list of
+        # live nodes
+        minimum = pq.pop()
+ 
+        # If minimum is the answer node
+        if minimum.cost == 0:
+             
+            # Print the path from root to
+            # destination;
+            printPath(minimum)
+            return
+ 
+        # Generate all possible children
+        for i in range(n):
+            new_tile_pos = [
+                minimum.empty_tile_pos[0] + row[i],
+                minimum.empty_tile_pos[1] + col[i], ]
+                 
+            if isSafe(new_tile_pos[0], new_tile_pos[1]):
+                 
+                # Create a child node
+                child = newNode(minimum.mat,
+                                minimum.empty_tile_pos,
+                                new_tile_pos,
+                                minimum.level + 1,
+                                minimum, final,)
+ 
+                # Add child to list of live nodes
+                pq.push(child)
+ 
+# Driver Code
+ 
+# Initial configuration
+# Value 0 is used for empty space
+initial = [ [ 1, 2, 3 ],
+            [ 5, 6, 0 ],
+            [ 7, 8, 4 ] ]
+ 
+# Solvable Final configuration
+# Value 0 is used for empty space
+final = [ [ 1, 2, 3 ],
+          [ 5, 8, 6 ],
+          [ 0, 7, 4 ] ]
+ 
+# Blank tile coordinates in
+# initial configuration
+empty_tile_pos = [ 1, 2 ]
+ 
+# Function call to solve the puzzle
+solve(initial, empty_tile_pos, final)
+ 
